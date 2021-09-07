@@ -62,4 +62,31 @@ class MemberJpaRepositoryTest {
         assertThat(deleteCount).isEqualTo(0);
     }
 
+    @Test
+    @DisplayName("특정 이름과 나이를 조건으로 검색한다.")
+    void findByUsernameAndAgeGreaterThen() {
+        Member m1 = new Member("AAA", 10);
+        Member m2 = new Member("AAA", 20);
+        memberJpaRepository.save(m1);
+        memberJpaRepository.save(m2);
+
+        List<Member> result = memberJpaRepository.findByUsernameAndAgeGreaterThen("AAA", 15);
+        Member actual = result.get(0);
+
+        assertThat(actual.getUsername()).isEqualTo("AAA");
+        assertThat(actual.getAge()).isEqualTo(20);
+        assertThat(result).hasSize(1);
+    }
+
+    @Test
+    void testNamedQuery() {
+        Member m1 = new Member("AAA", 10);
+        Member m2 = new Member("BBB", 20);
+        memberJpaRepository.save(m1);
+        memberJpaRepository.save(m2);
+
+        List<Member> result = memberJpaRepository.findByUsername("AAA");
+        Member findMember = result.get(0);
+        assertThat(findMember).isEqualTo(m1);
+    }
 }
