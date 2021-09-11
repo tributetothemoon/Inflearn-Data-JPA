@@ -27,6 +27,6 @@ public class Team {
         this.name = name;
     }
 
-    @OneToMany(mappedBy = "team")
+    @OneToMany(mappedBy = "team", orphanRemoval = true)
     private List<Member> members = new ArrayList<>();
 }

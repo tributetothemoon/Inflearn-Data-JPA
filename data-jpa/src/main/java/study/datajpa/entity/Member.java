@@ -20,7 +20,7 @@ public class Member {
     private String username;
     private Integer age;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.LAZY, cascade = CascadeType.REMOVE)
     @JoinColumn(name = "team_id")
     private Team team;
 

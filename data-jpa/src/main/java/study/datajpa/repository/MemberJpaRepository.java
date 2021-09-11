@@ -5,6 +5,7 @@ import study.datajpa.entity.Member;
 
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
+import javax.persistence.Query;
 import java.util.List;
 import java.util.Optional;
 
@@ -51,5 +52,19 @@ public class MemberJpaRepository {
         return em.createNamedQuery("Member.findByUsername", Member.class)
                 .setParameter("username", "회원1")
                 .getResultList();
+    }
+
+    public List<Member> findByPage(int age, int offset, int limit) {
+        return em.createQuery("SELECT m FROM Member m where m.age = :age order by m.username desc", Member.class)
+                .setParameter("age", age)
+                .setFirstResult(offset)   // 어디서부터 가져올텐가
+                .setMaxResults(limit)
+                .getResultList();
+    }
+
+    public long totalCount(int age) {
+        return em.createQuery("Select count(m) From Member m Where m.age = :age", Long.class)
+                .setParameter("age", age)
+                .getSingleResult();
     }
 }

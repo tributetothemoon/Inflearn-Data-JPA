@@ -4,6 +4,10 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Slice;
+import org.springframework.data.domain.Sort;
 import org.springframework.test.annotation.Rollback;
 import org.springframework.transaction.annotation.Transactional;
 import study.datajpa.dto.MemberDto;
@@ -180,4 +184,70 @@ public class MemberRepositoryTest {
         assertThat(listByUsername.get(0)).isEqualTo(m1);
 
     }
+
+    @Test
+    void paging() {
+        // given
+        memberRepository.save(new Member("member1", 10));
+        memberRepository.save(new Member("member2", 10));
+        memberRepository.save(new Member("member3", 10));
+        memberRepository.save(new Member("member4", 10));
+        memberRepository.save(new Member("member5", 10));
+
+        PageRequest pageRequest = PageRequest.of(0, 3, Sort.by(Sort.Direction.ASC, "username"));
+
+        // when
+        Page<Member> page = memberRepository.findByAge(10, pageRequest);
+//        카운트 쿼리가 같이 나간다.
+//        long totalCount = memberRepository.totalCount(age);
+
+        Page<MemberDto> memberDtoPage = page.map(member -> new MemberDto(member.getId(), member.getUsername(), null));
+
+                // then
+                List < Member > contents = page.getContent();
+        for (Member member : contents) {
+            System.out.println("member = " + member);
+        }
+
+        long totalElements = page.getTotalElements();
+        System.out.println("totalElements = " + totalElements);
+
+        assertThat(contents).hasSize(3);    // 현재 가져온 로우의 개수
+        assertThat(page.getTotalElements()).isEqualTo(5);   // 총 로우의 개수
+        assertThat(page.getNumber()).isEqualTo(0);  // 페이지 번호
+        assertThat(page.getTotalPages()).isEqualTo(2);  // 총 페이지 개수
+        assertThat(page.isFirst()).isTrue();    // 첫 페이지인지
+        assertThat(page.hasNext()).isTrue();    // 다음 페이지가 있는지
+    }
+
+//    @Test
+//    void slicing() {
+//        // given
+//        memberRepository.save(new Member("member1", 10));
+//        memberRepository.save(new Member("member2", 10));
+//        memberRepository.save(new Member("member3", 10));
+//        memberRepository.save(new Member("member4", 10));
+//        memberRepository.save(new Member("member5", 10));
+//
+//        PageRequest pageRequest = PageRequest.of(0, 3, Sort.by(Sort.Direction.DESC, "username"));
+//
+//        // when
+//        Slice<Member> page = memberRepository.findByAge(10, pageRequest);
+////        카운트 쿼리가 같이 나간다.
+////        long totalCount = memberRepository.totalCount(age);
+//
+//        // then
+//        List<Member> contents = page.getContent();
+//        for (Member member : contents) {
+//            System.out.println("member = " + member);
+//        }
+//
+//        assertThat(contents).hasSize(3);
+////        assertThat(page.getTotalElements()).isEqualTo(5); // 없는 기능이다.
+//        assertThat(page.getNumber()).isEqualTo(0);
+////        assertThat(page.getTotalPages()).isEqualTo(2);    // 없는 기능이다.
+//        assertThat(page.isFirst()).isTrue();
+//        assertThat(page.hasNext()).isTrue();
+//    }
+
 }
