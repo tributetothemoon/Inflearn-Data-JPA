@@ -3,7 +3,9 @@ package study.datajpa.repository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Slice;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import study.datajpa.dto.MemberDto;
@@ -52,4 +54,23 @@ public interface MemberRepository extends JpaRepository<Member, Long> {
     Page<Member> findByAge(int age, Pageable pageable);
 
 //    Slice<Member> findByAge(int age, Pageable pageable);
+
+    @Modifying(clearAutomatically = true)  // entityManager의 execute를 실행한다. (안 한다면 getResult() 등.. 이 나간다.)
+    @Query(value = "UPDATE Member m set m.age = m.age + 1 WHERE m.age >= :age")
+    int bulkAgePlus(@Param("age") int age);
+
+    @Query(value = "SELECT m From Member m LEFT JOIN FETCH m.team")
+    List<Member> findAllMemberFetchJoin();
+
+    @Override
+    @EntityGraph(attributePaths = {"team"})
+    List<Member> findAll();
+
+    @EntityGraph(attributePaths = {"team"})
+    @Query("SELECT m From Member m")
+    List<Member> findAllMemberEntityGraph();
+
+    @EntityGraph(attributePaths = {"team"})
+//    @EntityGraph("Member.all")
+    List<Member> findEntityGraphByUsername(@Param("username") String username);
 }

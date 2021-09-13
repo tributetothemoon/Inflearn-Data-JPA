@@ -6,7 +6,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Slice;
 import org.springframework.data.domain.Sort;
 import org.springframework.test.annotation.Rollback;
 import org.springframework.transaction.annotation.Transactional;
@@ -14,6 +13,8 @@ import study.datajpa.dto.MemberDto;
 import study.datajpa.entity.Member;
 import study.datajpa.entity.Team;
 
+import javax.persistence.EntityManager;
+import javax.persistence.PersistenceContext;
 import java.util.List;
 import java.util.Optional;
 
@@ -29,6 +30,9 @@ public class MemberRepositoryTest {
 
     @Autowired
     private TeamRepository teamRepository;
+
+    @PersistenceContext
+    private EntityManager entityManager;
 
     @Test
     void testMember() {
@@ -203,8 +207,8 @@ public class MemberRepositoryTest {
 
         Page<MemberDto> memberDtoPage = page.map(member -> new MemberDto(member.getId(), member.getUsername(), null));
 
-                // then
-                List < Member > contents = page.getContent();
+        // then
+        List<Member> contents = page.getContent();
         for (Member member : contents) {
             System.out.println("member = " + member);
         }
@@ -250,4 +254,97 @@ public class MemberRepositoryTest {
 //        assertThat(page.hasNext()).isTrue();
 //    }
 
+    @Test
+    @DisplayName("벌크성 쿼리 - 일정 나이 이상의 멤버의 나이를 일괄적으로 수정한다.")
+    void bulkAgePlus() {// given
+        memberRepository.save(new Member("member1", 10));
+        memberRepository.save(new Member("member2", 19));
+        memberRepository.save(new Member("member3", 20));
+        memberRepository.save(new Member("member4", 21));
+        memberRepository.save(new Member("member5", 40));
+
+        // when
+        int resultCount = memberRepository.bulkAgePlus(20);
+
+        // then
+        assertThat(resultCount).isEqualTo(3);
+    }
+
+    @Test
+    @DisplayName("EntityGraph를 사용하여 JPQL 작성 없이 Fetch Join을 실행한다.")
+    void findMembersLazy() {
+        Team teamA = new Team("TeamA");
+        teamRepository.save(teamA);
+        Team teamB = new Team("TeamB");
+        teamRepository.save(teamB);
+
+        Member m1 = new Member("Member1", 10, teamA);
+        memberRepository.save(m1);
+        Member m2 = new Member("Member2", 20, teamB);
+        memberRepository.save(m2);
+
+        entityManager.flush();
+        entityManager.clear();
+
+        List<Member> members = memberRepository.findAll();
+
+        // getTeam() 할 때마다 쿼리가 나간다.
+        // 하지만 @EntityGraph를 부여하여 Fetch Join을 사용하게 된다.
+        for (Member member : members) {
+            System.out.println("member = " + member);
+            System.out.println("member.getTeam().getName( = " + member.getTeam().getName());
+        }
+    }
+
+    @Test
+    @DisplayName("JPQL을 이용하여 Fetch Join을 사용한다.")
+    void findMembersFetch() {
+        Team teamA = new Team("TeamA");
+        teamRepository.save(teamA);
+        Team teamB = new Team("TeamB");
+        teamRepository.save(teamB);
+
+        Member m1 = new Member("Member1", 10, teamA);
+        memberRepository.save(m1);
+        Member m2 = new Member("Member2", 20, teamB);
+        memberRepository.save(m2);
+
+        entityManager.flush();
+        entityManager.clear();
+
+        List<Member> members = memberRepository.findAllMemberFetchJoin();
+
+        // 추가적인 쿼리가 필요하지 않다.
+        for (Member member : members) {
+            System.out.println("member = " + member);
+            System.out.println("member.getTeam().getClass() = " + member.getTeam().getClass());
+            System.out.println("member.getTeam().getName() = " + member.getTeam().getName());
+        }
+    }
+
+    @Test
+    @DisplayName("Entity Graph를 이용해 조건부 Fetch Join 쿼리를 JPQL 작성 없이 사용한다.")
+    void findEntityGraphByUsername() {
+        Team teamA = new Team("TeamA");
+        teamRepository.save(teamA);
+        Team teamB = new Team("TeamB");
+        teamRepository.save(teamB);
+
+        Member m1 = new Member("Member1", 10, teamA);
+        memberRepository.save(m1);
+        Member m2 = new Member("Member1", 20, teamB);
+        memberRepository.save(m2);
+
+        entityManager.flush();
+        entityManager.clear();
+
+        List<Member> members = memberRepository.findEntityGraphByUsername("Member1");
+
+        for (Member member : members) {
+            System.out.println();
+            System.out.println("member = " + member);
+            System.out.println("member.getTeam().getClass() = " + member.getTeam().getClass());
+            System.out.println("member.getTeam().getName() = " + member.getTeam().getName());
+        }
+    }
 }
