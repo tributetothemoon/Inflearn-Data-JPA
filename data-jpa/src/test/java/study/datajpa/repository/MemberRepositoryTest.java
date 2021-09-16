@@ -347,4 +347,39 @@ public class MemberRepositoryTest {
             System.out.println("member.getTeam().getName() = " + member.getTeam().getName());
         }
     }
+
+    @Test
+    @DisplayName("쿼리 힌트 기능을 이용해 읽어온 엔티티가 영속성 컨텍스트에 등록되지 않도록 한다.")
+    void queryHint() {
+        // given
+        Member savedMember = memberRepository.save(new Member("member1", 10));
+        entityManager.flush();
+        entityManager.clear();
+
+        // when
+        // 영속성 컨텍스트에 등록되지 않는다.
+        Member member1 = memberRepository.findReadOnlyByUsername("member1").orElseThrow();
+        member1.setUsername("member2"); // 쿼리가 날라가지 않는다.
+
+        entityManager.flush();
+        entityManager.clear();
+
+        // then
+        Member actual = memberRepository.findById(member1.getId()).orElseThrow();
+        assertThat(actual.getUsername()).isNotEqualTo("member2");
+    }
+
+    @Test
+    void findLockByUsername() {
+        // given
+        Member member1 = new Member("member1", 10);
+        memberRepository.save(member1);
+        entityManager.flush();
+        entityManager.clear();
+
+        // when, then
+        memberRepository.findLockByUsername("member1");
+        // 쿼리 마지막에 for update가 붙는다.
+        // 즉, Lock을 JPA를 통해 걸 수 있다.
+    }
 }
