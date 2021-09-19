@@ -39,7 +39,7 @@ public class MemberController {
                 .map(MemberDto::from);
     }
 
-    @PostConstruct
+//    @PostConstruct
     public void init() {
         List<Member> members = new ArrayList<>();
         for (int i = 0; i < 100; i++) {
